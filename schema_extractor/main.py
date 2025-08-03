@@ -40,6 +40,7 @@ def main():
         updated_table_dict[table_name] = updated_columns.content
         # sleep for 5 seconds to avoid rate limiting
         time.sleep(5)
+        # todo - create schema summary by iterating over the updated_columns and creating a summary
 
     print(f"updated_table_dict : {updated_table_dict}\n")
 

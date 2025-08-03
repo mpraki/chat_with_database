@@ -10,7 +10,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 def create_vector_store(table_columns: dict):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     collection_name = "sql-schemas"
-    persist_directory = f"./vector_stores/{collection_name}"
+    persist_directory = f"../vector_stores/{collection_name}" #todo  Adjust the path to be common for both data and schema extractor
 
     # Delete the collection if it already exists
     if os.path.exists(persist_directory):
