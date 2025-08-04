@@ -1,5 +1,5 @@
 [project]
-name = "data-extractor"
+name = "data_extractor"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -10,5 +10,8 @@ dependencies = [
     "langchain[google-genai]",
     "pydantic",
     "langchain-chroma",
-    "streamlit"
+    "streamlit",
+    "langgraph",
+    "langgraph-checkpoint-sqlite",
+    "grandalf"
 ]

@@ -1,4 +1,4 @@
-from data_extractor.data_extractor_agent import AgentState
+from ...agent_state import AgentState
 
 
 def validate(state: AgentState) -> bool:
