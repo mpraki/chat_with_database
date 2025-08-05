@@ -1,5 +1,9 @@
+import os
+import sqlite3
+
+from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite import SqliteSaver
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph
 
 from .agent_state import AgentState
 from .nodes import planner_llm, dry_run_executor
@@ -8,13 +12,15 @@ from .nodes import sql_query_drafter_llm
 from .nodes import sql_query_executor
 from .nodes import user_query_analyzer_llm
 from .nodes import vector_search
-from .nodes.validators import user_query_validator, sql_query_validator, dry_run_validator
+from .nodes.validators import sql_query_validator, dry_run_validator
 from .nodes.validators import vector_score_validator
 
 
 class Agent:
 
-    def __init__(self, checkpointer=None):
+    def __init__(self, checkpointer):
+        load_dotenv()
+
         graph_builder = StateGraph(AgentState)
         graph_builder.add_node('vector_search', vector_search.search)
         graph_builder.add_node('user_query_analyzer', user_query_analyzer_llm.analyze)
@@ -25,13 +31,11 @@ class Agent:
         graph_builder.add_node('sql_query_executor', sql_query_executor.execute)
 
         graph_builder.add_conditional_edges('vector_search', vector_score_validator.validate,
-                                         {True: 'planner', False: 'user_query_analyzer'})
-        # graph_builder.add_conditional_edges('user_query_analyzer', user_query_validator.validate,
-        #                                  {True: END, False: 'planner'})
+                                            {True: 'planner', False: 'user_query_analyzer'})
         graph_builder.add_conditional_edges('sql_query_analyzer', sql_query_validator.validate,
-                                         {True: 'dry_run_executor', False: 'drafter'})
+                                            {True: 'dry_run_executor', False: 'drafter'})
         graph_builder.add_conditional_edges('dry_run_executor', dry_run_validator.validate,
-                                         {True: 'sql_query_executor', False: 'drafter'})
+                                            {True: 'sql_query_executor', False: 'drafter'})
 
         graph_builder.set_entry_point('vector_search')
         graph_builder.add_edge('user_query_analyzer', 'vector_search')
@@ -39,26 +43,33 @@ class Agent:
         graph_builder.add_edge('drafter', 'sql_query_analyzer')
         graph_builder.set_finish_point('sql_query_analyzer')
 
-        self.graph = graph_builder.compile(checkpointer=checkpointer, interrupt_before=["user_query_analyzer"])
+        self.graph = graph_builder.compile(checkpointer=checkpointer, interrupt_after=["user_query_analyzer"])
 
 
-def run_agent(task: str) -> str:
-    with SqliteSaver.from_conn_string(":memory:") as memory:
-        agent = Agent(checkpointer=memory)
+def run_agent(task: str, session_id: str) -> str:
+    agent = Agent(create_memory_db(session_id))
 
-        print("--- LangGraph Diagram ---")
-        try:
-            # This requires playwright to be installed and a browser to be available
-            # pip install playwright
-            # playwright install
-            with open("langgraph_diagram.png", "wb") as f:
-                f.write(agent.graph.get_graph().draw_mermaid_png())
-            print("Saved LangGraph diagram to langgraph_diagram.png")
-        except Exception as e:
-            print(f"Could not save LangGraph diagram: {e}")
-        print("-------------------------")
+    # draw(agent)
 
-        thread = {"configurable": {"thread_id": "1"}}
-        agent.graph.invoke({'task': task}, config=thread)
-        return agent.graph.get_state(thread)['final_result']
+    thread = {"configurable": {"thread_id": "1"}}
+    agent.graph.invoke({'task': task}, config=thread)
+    return agent.graph.get_state(thread).values['user_query_clarification']
 
+
+def create_memory_db(session_id: str) -> SqliteSaver:
+    db_dir = "../memory"
+    db_path = os.path.join(db_dir, session_id + "conversation_history.db")
+    os.makedirs(db_dir, exist_ok=True)
+    conn = sqlite3.connect(db_path, check_same_thread=False)
+    return SqliteSaver(conn)
+
+
+def draw(agent):
+    print("--- LangGraph Diagram ---")
+    try:
+        with open("langgraph_diagram.png", "wb") as f:
+            f.write(agent.graph.get_graph().draw_mermaid_png())
+        print("Saved LangGraph diagram to langgraph_diagram.png")
+    except Exception as e:
+        print(f"Could not save LangGraph diagram: {e}")
+    print("-------------------------")

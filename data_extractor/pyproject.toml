@@ -11,7 +11,5 @@ dependencies = [
     "pydantic",
     "langchain-chroma",
     "streamlit",
-    "langgraph",
-    "langgraph-checkpoint-sqlite",
-    "grandalf"
+    "nest-asyncio"
 ]
