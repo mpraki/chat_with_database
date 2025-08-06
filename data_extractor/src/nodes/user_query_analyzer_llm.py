@@ -11,18 +11,8 @@ def analyze(state: AgentState) -> dict[str, str]:
     with open("../schema_summary.txt", "r") as f:
         schema_summary = f.read()
 
-    # Ensure conversation_history exists in state
-    if 'conversation_history' not in state or state['conversation_history'] is None or state[
-        'conversation_history'] == []:
-        print('if')
-        history = [Conversation(role="USER", content=state['task'])]  # adding user query to conversation history
-    else:
-        print('else')
-        history = state['conversation_history']
-        history.append(Conversation(role="USER", content=state['task']))  # adding user query to conversation history
+    history = state['conversation_history']
 
-    print("history - 0........ ", state['conversation_history'])
-    print("history - 0........ ", history)
     # Format the conversation history for the prompt
     conversation_str = format_conversation(history)
 

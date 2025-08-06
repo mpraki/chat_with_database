@@ -8,7 +8,7 @@ def validate(state: AgentState) -> bool:
 
     # ITERATE vector_results and check if any score is below 0.6
     for doc, score in vector_results:
-        if score < 0.6:
+        if score < 0.5:
             print(f"Document {doc.page_content} has a good score: {score}")
             return True
 

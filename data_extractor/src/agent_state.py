@@ -14,5 +14,9 @@ class AgentState(TypedDict, total=False):
     vector_results: list[tuple[Document, float]]
     conversation_history: Annotated[list[Conversation], operator.add]
     user_query_clarification: str
-    current_user_query_revision: int
+    enhanced_user_query: str
+    sql_query_draft: str
+    is_draft_query_valid: bool
+    reason_for_draft_revision: str
+    current_user_query_revision: int #??
     final_result: str

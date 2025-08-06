@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from pydantic import SecretStr
 
-from ..agent_state import AgentState
+from ..agent_state import AgentState, Conversation
 
 
 def search(state: AgentState) -> dict[str, list[tuple[Document, float]]]:
@@ -21,17 +21,22 @@ def search(state: AgentState) -> dict[str, list[tuple[Document, float]]]:
         embedding_function=embeddings
     )
 
-    print(f"Searching for task: {state['task']}")
+    # Ensure conversation_history exists in state
+    if 'conversation_history' not in state or state['conversation_history'] is None or state['conversation_history'] == []:
+        history = [Conversation(role="USER", content=state['task'])]  # adding user query to conversation history
+    else:
+        print('else')
+        history = state['conversation_history']
+        history.append(Conversation(role="USER", content=state['task']))  # adding user query to conversation history
+
     print(f"conversation_history - {state['conversation_history']}")
 
     user_query_context = (' '.join([conversation['content'] for conversation in state.get('conversation_history', []) if
                                     conversation['role'] == 'USER'])
                            + ' ' + state['task'])
 
-    print(f"User query context: {user_query_context}")
-
     docs_and_scores = vector_db.similarity_search_with_score(query=user_query_context, k=4)
     for doc, score in docs_and_scores:
         print(f"Found document with score: {score} and metadata: {doc.metadata}")
 
-    return {'vector_results': docs_and_scores}
+    return {'vector_results': docs_and_scores, 'conversation_history': history}

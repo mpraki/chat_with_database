@@ -47,7 +47,8 @@ class Agent:
 
 
 def run_agent(task: str, session_id: str) -> str:
-    agent = Agent(create_memory_db(session_id))
+    sqlite_saver = create_memory_db(session_id)
+    agent = Agent(sqlite_saver)
 
     # draw(agent)
 
