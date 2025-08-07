@@ -12,7 +12,7 @@ from .nodes import sql_query_drafter_llm
 from .nodes import sql_query_executor
 from .nodes import user_query_analyzer_llm
 from .nodes import vector_search
-from .nodes.validators import sql_query_validator, dry_run_validator
+from .nodes.validators import sql_query_validator
 from .nodes.validators import vector_score_validator
 
 
@@ -34,7 +34,7 @@ class Agent:
                                             {True: 'planner', False: 'user_query_analyzer'})
         graph_builder.add_conditional_edges('sql_query_analyzer', sql_query_validator.validate,
                                             {True: 'dry_run_executor', False: 'drafter'})
-        graph_builder.add_conditional_edges('dry_run_executor', dry_run_validator.validate,
+        graph_builder.add_conditional_edges('dry_run_executor', sql_query_validator.validate,
                                             {True: 'sql_query_executor', False: 'drafter'})
 
         graph_builder.set_entry_point('vector_search')

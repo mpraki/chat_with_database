@@ -19,4 +19,4 @@ class AgentState(TypedDict, total=False):
     is_draft_query_valid: bool
     reason_for_draft_revision: str
     current_user_query_revision: int #??
-    final_result: str
+    final_result: list[dict] #??
