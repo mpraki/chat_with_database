@@ -1,11 +1,16 @@
 from langchain_core.prompts import ChatPromptTemplate
+from langgraph.config import get_stream_writer
 
 from ..agent_state import AgentState, Conversation
 from ..llm import model
 from ..prompts import USER_QUERY_ANALYZER_PROMPT
+from ..utils.constants import Constants
 
 
 def analyze(state: AgentState) -> dict[str, str]:
+    writer = get_stream_writer()
+    writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Framing question for user query clarification..."})
+
     schema_summary = ''
     # Read schema summary from the relative path
     with open("../schema_summary.txt", "r") as f:
@@ -23,7 +28,7 @@ def analyze(state: AgentState) -> dict[str, str]:
 
     # Add the response to the conversation history
     history.append(Conversation(role="ASSISTANT", content=response.content))
-    print(f"history - 1........ {history}")
+
     return {'user_query_clarification': response.content, 'conversation_history': history}
 
 

@@ -3,7 +3,7 @@ import streamlit as st
 from dotenv import load_dotenv
 import uuid
 
-from src.data_extractor_agent import run_agent
+from src.data_extractor_agent import run_agent, stream_agent
 
 nest_asyncio.apply()
 load_dotenv()
@@ -22,18 +22,29 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # React to user input
-if prompt := st.chat_input("Ask your question..."):
+if prompt := st.chat_input("What do you want to see in your data..."):
     # Display user message in chat message container
     st.chat_message("user").markdown(prompt)
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # Get assistant response
-    response = run_agent(prompt, st.session_state.session_id)
+    #response = run_agent(prompt, st.session_state.session_id)
 
-    # Display assistant response in chat message container
+    progress_update = ''
+    # Get assistant response
     with st.chat_message("assistant"):
-        st.markdown(response)
+        placeholder = st.empty()
+        with st.spinner("Thinking..."):
+            response = ""
+            for chunk in stream_agent(prompt, st.session_state.session_id):
+                if chunk.get("type") == "progress":
+                    progress_update = chunk["content"]
+                    if progress_update:
+                        placeholder.text(progress_update)
+                elif chunk.get("type") == "response":
+                    progress_update = ''
+                    response = chunk["content"]
+                    placeholder.markdown(response)
 
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})

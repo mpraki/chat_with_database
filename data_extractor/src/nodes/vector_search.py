@@ -3,12 +3,17 @@ import os
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langgraph.config import get_stream_writer
 from pydantic import SecretStr
 
 from ..agent_state import AgentState, Conversation
+from ..utils.constants import Constants
 
 
 def search(state: AgentState) -> dict[str, list[tuple[Document, float]]]:
+    writer = get_stream_writer()
+    writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Finding relevant schemas..."})
+
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
                                               google_api_key=SecretStr(os.getenv("GOOGLE_API_KEY")))
 
@@ -22,18 +27,16 @@ def search(state: AgentState) -> dict[str, list[tuple[Document, float]]]:
     )
 
     # Ensure conversation_history exists in state
-    if 'conversation_history' not in state or state['conversation_history'] is None or state['conversation_history'] == []:
+    if 'conversation_history' not in state or state['conversation_history'] is None or state[
+        'conversation_history'] == []:
         history = [Conversation(role="USER", content=state['task'])]  # adding user query to conversation history
     else:
-        print('else')
         history = state['conversation_history']
-        history.append(Conversation(role="USER", content=state['task']))  # adding user query to conversation history
-
-    print(f"conversation_history - {state['conversation_history']}")
+        history.append(Conversation(role="USER", content=state['task']))  # appending user query to conversation history
 
     user_query_context = (' '.join([conversation['content'] for conversation in state.get('conversation_history', []) if
                                     conversation['role'] == 'USER'])
-                           + ' ' + state['task'])
+                          + ' ' + state['task'])
 
     docs_and_scores = vector_db.similarity_search_with_score(query=user_query_context, k=4)
     for doc, score in docs_and_scores:

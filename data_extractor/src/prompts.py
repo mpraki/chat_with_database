@@ -131,10 +131,39 @@ db_schema: {db_schema}
 SQL_VALIDATION_PROMPT = """
 You are a security-focused SQL expert for Azure SQL Database. 
 
-Given the following SQL query, validate its syntax and check for any errors, security improvements and best practices. 
+Given the following SQL query, validate its syntax and check for any errors, security improvements and best practices(only if any huge mistake).
+No need to suggest some improvements always. If the query can be executed without major side effects, simply return True. 
 
 SQL Query:
 {sql_query}
 
 {format_instructions}
+"""
+
+SQL_QUERY_DRAFT_REVISION_PROMPT = """You are an LLM-based query generation assistant. Your task is to fix the provided Azure SQL SELECT query using the provided plan, db_schema, and any identified issues.
+Inputs:
+query_plan: A structured, step-by-step logical plan for building the SQL query. This includes the user’s intent, selected tables and columns, join logic, filter conditions, ordering, grouping, and Azure SQL-specific considerations.
+
+db_schema: The database schema that describes tables, columns, data types, primary/foreign key relationships, and special fields such as JSON metadata.
+
+sql_query: The original SQL query that needs to be fixed.
+
+identified_issues: A list of specific issues or errors found in the original SQL query, such as syntax errors, missing joins, incorrect column references, or security vulnerabilities.
+
+Constraints:
+Only Azure SQL-compatible SELECT queries are supported.
+The output must be a complete, syntactically correct Azure SQL SQL query.
+Do not include any explanation, comments, or non-SQL output.
+Use proper Azure SQL syntax, including:
+GETDATE() for date parsing (if needed)
+TOP for limiting results
+Use fully qualified column references where needed (e.g., agreements.status)
+Always use fully qualified table names with the schema name. (e.g., SELECT * FROM schema_name.table_name)
+
+Output:
+Return only the SQL query as a single string.
+
+query_plan: {query_plan}
+db_schema: {db_schema}
+identified_issues: {identified_issues}
 """
