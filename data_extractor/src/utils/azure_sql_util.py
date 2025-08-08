@@ -1,3 +1,5 @@
+import os
+
 import pyodbc
 
 
@@ -11,30 +13,34 @@ def get_azure_sql_connection(server, database, client_id, client_secret):
         f"Authentication=ActiveDirectoryServicePrincipal;"
     )
 
-    engine = pyodbc.connect(conn_str)
-    return engine
+    return pyodbc.connect(conn_str)
 
 
-def run_execute_plan_query(engine, query) -> dict:
-    cursor = engine.cursor()
+def engine():
+    return get_azure_sql_connection(os.getenv("DATABASE_URL"),
+                                    os.getenv("DATABASE_NAME"),
+                                    os.getenv("DATABASE_CLIENT_ID"),
+                                    os.getenv("DATABASE_CLIENT_SECRET"))
+
+
+def run_execute_plan_query(query) -> dict:
+    cursor = engine().cursor()
     try:
-        query_plan = f"""SET SHOWPLAN_XML ON;
-        GO
-        {query}
-        GO
-        SET SHOWPLAN_XML OFF;"""
-        cursor.execute(query_plan)
-        columns = [column[0] for column in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        return {"success": True, "data": results, "error": None}
+        cursor.execute("SET NOEXEC ON;")
+        cursor.execute(query)
+        # If no exception, the query is valid. No result set is produced with NOEXEC ON.
+        return {"success": True, "data": None, "error": None}
     except Exception as e:
+        print(f"Error executing query: {e}")
         return {"success": False, "data": None, "error": str(e)}
     finally:
+        cursor.execute("SET NOEXEC OFF;")
         cursor.close()
 
 
-def execute_query(engine, query):
-    cursor = engine.cursor()
+def execute_query(query):
+    print(f"Executing query: {query}")
+    cursor = engine().cursor()
     cursor.execute(query)
     columns = [column[0] for column in cursor.description]
     results = [dict(zip(columns, row)) for row in cursor.fetchall()]

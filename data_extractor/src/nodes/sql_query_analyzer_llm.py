@@ -1,13 +1,17 @@
 from langchain.output_parsers import ResponseSchema
 from langchain.output_parsers import StructuredOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langgraph.config import get_stream_writer
 
 from ..agent_state import AgentState
 from ..llm import model
 from ..prompts import SQL_VALIDATION_PROMPT
+from ..utils.constants import Constants
 
 
 def analyze(state: AgentState) -> dict:
+    writer = get_stream_writer()
+    writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Analyzing drafted SQL query..."})
     print(f"Analysing drafted SQL query: {state['sql_query_draft']}")
 
     parser = StructuredOutputParser.from_response_schemas(response_schemas())
@@ -22,6 +26,7 @@ def analyze(state: AgentState) -> dict:
     response = model().invoke(prompt)
     json_output = parser.parse(response.content)
 
+    writer({Constants.STATE_PROGRESS_UPDATE_KEY: "SQL query analysis complete."})
     return {'is_draft_query_valid': json_output.get('is_sql_valid'),
             'reason_for_draft_revision': json_output.get('reason_for_revision')}
 

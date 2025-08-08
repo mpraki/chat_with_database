@@ -42,4 +42,5 @@ def search(state: AgentState) -> dict[str, list[tuple[Document, float]]]:
     for doc, score in docs_and_scores:
         print(f"Found document with score: {score} and metadata: {doc.metadata}")
 
+    writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Found relevant schemas..."})
     return {'vector_results': docs_and_scores, 'conversation_history': history}

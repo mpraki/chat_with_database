@@ -29,6 +29,8 @@ def analyze(state: AgentState) -> dict[str, str]:
     # Add the response to the conversation history
     history.append(Conversation(role="ASSISTANT", content=response.content))
 
+    writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Framed question for user query clarification..."})
+
     return {'user_query_clarification': response.content, 'conversation_history': history}
 
 

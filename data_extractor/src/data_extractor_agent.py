@@ -27,19 +27,19 @@ class Agent:
         graph_builder.add_node('user_query_analyzer', user_query_analyzer_llm.analyze)
         graph_builder.add_node('planner', planner_llm.plan)
         graph_builder.add_node('drafter', sql_query_drafter_llm.draft)
-        graph_builder.add_node('sql_query_analyzer', sql_query_analyzer_llm.analyze)
+        graph_builder.add_node('reviewer', sql_query_analyzer_llm.analyze)
         graph_builder.add_node('dry_run_executor', dry_run_executor.execute)
         graph_builder.add_node('sql_query_executor', sql_query_executor.execute)
 
         graph_builder.add_conditional_edges('vector_search', vector_score_validator.validate, {True: 'planner', False: 'user_query_analyzer'})
-        graph_builder.add_conditional_edges('sql_query_analyzer', sql_query_validator.validate, {True: 'dry_run_executor', False: 'drafter'})
+        graph_builder.add_conditional_edges('reviewer', sql_query_validator.validate, {True: 'dry_run_executor', False: 'drafter'})
         graph_builder.add_conditional_edges('dry_run_executor', sql_query_validator.validate, {True: 'sql_query_executor', False: 'drafter'})
 
         graph_builder.set_entry_point('vector_search')
         graph_builder.add_edge('user_query_analyzer', 'vector_search')
         graph_builder.add_edge('planner', 'drafter')
-        graph_builder.add_edge('drafter', 'sql_query_analyzer')
-        graph_builder.set_finish_point('sql_query_analyzer')
+        graph_builder.add_edge('drafter', 'reviewer')
+        graph_builder.set_finish_point('reviewer')
 
         self.graph = graph_builder.compile(checkpointer=checkpointer, interrupt_after=["user_query_analyzer"])
 

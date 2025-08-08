@@ -17,5 +17,5 @@ def validate(state: AgentState) -> bool:
             print(f"Document {doc.metadata} has a good score: {score}")
             return True
 
-    print("No document has a good score.")
+    writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Can't find relevant schemas..."})
     return False
