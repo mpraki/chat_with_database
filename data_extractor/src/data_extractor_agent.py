@@ -31,15 +31,18 @@ class Agent:
         graph_builder.add_node('dry_run_executor', dry_run_executor.execute)
         graph_builder.add_node('sql_query_executor', sql_query_executor.execute)
 
-        graph_builder.add_conditional_edges('vector_search', vector_score_validator.validate, {True: 'planner', False: 'user_query_analyzer'})
-        graph_builder.add_conditional_edges('reviewer', sql_query_validator.validate, {True: 'dry_run_executor', False: 'drafter'})
-        graph_builder.add_conditional_edges('dry_run_executor', sql_query_validator.validate, {True: 'sql_query_executor', False: 'drafter'})
+        graph_builder.add_conditional_edges('vector_search', vector_score_validator.validate,
+                                            {True: 'planner', False: 'user_query_analyzer'})
+        graph_builder.add_conditional_edges('reviewer', sql_query_validator.validate,
+                                            {True: 'dry_run_executor', False: 'drafter'})
+        graph_builder.add_conditional_edges('dry_run_executor', sql_query_validator.validate,
+                                            {True: 'sql_query_executor', False: 'drafter'})
 
         graph_builder.set_entry_point('vector_search')
         graph_builder.add_edge('user_query_analyzer', 'vector_search')
         graph_builder.add_edge('planner', 'drafter')
         graph_builder.add_edge('drafter', 'reviewer')
-        graph_builder.set_finish_point('reviewer')
+        graph_builder.set_finish_point('sql_query_executor')
 
         self.graph = graph_builder.compile(checkpointer=checkpointer, interrupt_after=["user_query_analyzer"])
 
@@ -63,15 +66,13 @@ def stream_agent(task: str, session_id: str):
     thread = {"configurable": {"thread_id": "1"}}
 
     for chunk in agent.graph.stream({'task': task}, config=thread, stream_mode=["custom", "values"]):
-        # print(f"Received chunk: {chunk}")
-        # for key, value in chunk[1].items():
-        #     print(f"Key: {key}, Value: {value}")
-
         data = chunk[-1]
         if Constants.STATE_PROGRESS_UPDATE_KEY in data:
             yield {"type": "progress", "content": data[Constants.STATE_PROGRESS_UPDATE_KEY]}
         if "user_query_clarification" in data:
             yield {"type": "response", "content": data["user_query_clarification"]}
+        if "final_result" in data:
+            yield {"type": "response", "content": data["final_result"]}
 
 
 def create_memory_db(session_id: str) -> SqliteSaver:

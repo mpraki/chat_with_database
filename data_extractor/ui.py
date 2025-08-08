@@ -1,9 +1,10 @@
+import uuid
+
 import nest_asyncio
 import streamlit as st
 from dotenv import load_dotenv
-import uuid
 
-from src.data_extractor_agent import run_agent, stream_agent
+from src.data_extractor_agent import stream_agent
 
 nest_asyncio.apply()
 load_dotenv()
@@ -19,7 +20,11 @@ if "session_id" not in st.session_state:
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        content = message["content"]
+        if isinstance(content, list) and content and isinstance(content[0], dict):
+            st.dataframe(content)
+        else:
+            st.markdown(content)
 
 # React to user input
 if prompt := st.chat_input("What do you want to see in your data..."):
@@ -28,7 +33,7 @@ if prompt := st.chat_input("What do you want to see in your data..."):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    #response = run_agent(prompt, st.session_state.session_id)
+    # response = run_agent(prompt, st.session_state.session_id)
 
     progress_update = ''
     # Get assistant response
@@ -44,7 +49,10 @@ if prompt := st.chat_input("What do you want to see in your data..."):
                 elif chunk.get("type") == "response":
                     progress_update = ''
                     response = chunk["content"]
-                    placeholder.markdown(response)
+                    if isinstance(response, list) and response and isinstance(response[0], dict):
+                        placeholder.dataframe(response)
+                    else:
+                        placeholder.markdown(response)
 
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
