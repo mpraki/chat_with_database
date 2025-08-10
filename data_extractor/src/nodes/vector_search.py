@@ -2,11 +2,12 @@ import os
 
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langgraph.config import get_stream_writer
 from pydantic import SecretStr
 
-from ..agent_state import AgentState, Conversation
+from ..agent_state import AgentState
 from ..utils.constants import Constants
 
 
@@ -29,14 +30,15 @@ def search(state: AgentState) -> dict[str, list[tuple[Document, float]]]:
     # Ensure conversation_history exists in state
     if 'conversation_history' not in state or state['conversation_history'] is None or state[
         'conversation_history'] == []:
-        history = [Conversation(role="USER", content=state['task'])]  # adding user query to conversation history
+        history = [HumanMessage(content=state['task'])]  # adding user query to conversation history
     else:
         history = state['conversation_history']
-        history.append(Conversation(role="USER", content=state['task']))  # appending user query to conversation history
+        history.append(HumanMessage(content=state['task']))  # appending user query to conversation history
 
-    user_query_context = (' '.join([conversation['content'] for conversation in state.get('conversation_history', []) if
-                                    conversation['role'] == 'USER'])
-                          + ' ' + state['task'])
+    user_query_context = (' '.join([
+        m.content for m in state.get('conversation_history', [])
+        if hasattr(m, 'content') and getattr(m, 'type', None) == 'human'
+    ]) + ' ' + state['task'])
 
     docs_and_scores = vector_db.similarity_search_with_score(query=user_query_context, k=4)
     for doc, score in docs_and_scores:

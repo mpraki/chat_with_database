@@ -123,6 +123,10 @@ Use fully qualified column references where needed (e.g., agreements.status)
 
 Always use fully qualified table names with the schema name. (e.g., SELECT * FROM schema_name.table_name)
 
+Always use TOP 10 in the select query to limit the number of rows.
+
+Replace(Alias) the column names with human-readable names if they are not user-friendly.
+
 Output:
 Return only the SQL query as a single string.
 

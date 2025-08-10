@@ -1,8 +1,9 @@
+from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.config import get_stream_writer
 from langgraph.errors import GraphRecursionError
 
-from ..agent_state import AgentState, Conversation
+from ..agent_state import AgentState
 from ..llm import model
 from ..prompts import USER_QUERY_ANALYZER_PROMPT
 from ..utils.constants import Constants
@@ -32,7 +33,7 @@ def analyze(state: AgentState) -> dict[str, str]:
     response = model().invoke(prompt)
 
     # Add the response to the conversation history
-    history.append(Conversation(role="ASSISTANT", content=response.content))
+    history.append(AIMessage(content=response.content))
 
     writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Framed question for user query clarification..."})
 
@@ -40,5 +41,11 @@ def analyze(state: AgentState) -> dict[str, str]:
             'current_user_query_revision': current_user_query_revision}
 
 
-def format_conversation(conversation: list[Conversation]) -> str:
-    return "\n".join(f"{c['role']}: {c['content']}" for c in conversation)
+def format_conversation(conversation: list[BaseMessage]) -> str:
+    lines = []
+    for c in conversation:
+        if getattr(c, 'type', None) == 'human':
+            lines.append(f"USER: {c.content}")
+        elif getattr(c, 'type', None) == 'ai':
+            lines.append(f"ASSISTANT: {c.content}")
+    return "\n".join(lines)
