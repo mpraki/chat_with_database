@@ -117,6 +117,8 @@ GETDATE() for date parsing (if needed)
 
 TOP for limiting results
 
+Do not include the id columns(primary and foreign keys) in the select query.
+
 Use fully qualified column references where needed (e.g., agreements.status)
 
 Always use fully qualified table names with the schema name. (e.g., SELECT * FROM schema_name.table_name)

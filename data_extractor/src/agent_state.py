@@ -38,5 +38,6 @@ class AgentState(TypedDict, total=False):
     sql_query_draft: str
     is_draft_query_valid: bool
     reason_for_draft_revision: str
-    current_user_query_revision: int  # ??
+    current_user_query_revision: int
+    current_draft_revision: int
     final_result: list[dict]

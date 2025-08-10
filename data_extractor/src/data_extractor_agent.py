@@ -3,7 +3,9 @@ import sqlite3
 
 from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.errors import GraphRecursionError
 from langgraph.graph import StateGraph
+from pyodbc import ProgrammingError
 
 from .agent_state import AgentState
 from .nodes import planner_llm, dry_run_executor
@@ -53,26 +55,34 @@ def run_agent(task: str, session_id: str) -> str:
 
     # draw(agent)
 
-    thread = {"configurable": {"thread_id": "1"}}
-    agent.graph.invoke({'task': task}, config=thread)
-    return agent.graph.get_state(thread).values[
-        'user_query_clarification']  # todo - how to find from which state to return the response? use fixed state variable to know it?
+    config = {"configurable": {"thread_id": "1"}, "recursion_limit": Constants.RECURSION_LIMIT}
+    agent.graph.invoke({'task': task}, config=config)
+    return agent.graph.get_state(config).values['user_query_clarification']
 
 
 def stream_agent(task: str, session_id: str):
     sqlite_saver = create_memory_db(session_id)
     agent = Agent(sqlite_saver)
 
-    thread = {"configurable": {"thread_id": "1"}}
+    # draw(agent)
 
-    for chunk in agent.graph.stream({'task': task}, config=thread, stream_mode=["custom", "values"]):
-        data = chunk[-1]
-        if Constants.STATE_PROGRESS_UPDATE_KEY in data:
-            yield {"type": "progress", "content": data[Constants.STATE_PROGRESS_UPDATE_KEY]}
-        if "user_query_clarification" in data:
-            yield {"type": "response", "content": data["user_query_clarification"]}
-        if "final_result" in data:
-            yield {"type": "response", "content": data["final_result"]}
+    config = {"configurable": {"thread_id": "1"}, "recursion_limit": Constants.RECURSION_LIMIT}
+    try:
+        for chunk in agent.graph.stream({'task': task}, config=config, stream_mode=["custom", "values"]):
+            data = chunk[-1]
+            if Constants.STATE_PROGRESS_UPDATE_KEY in data:
+                yield {"type": "progress", "content": data[Constants.STATE_PROGRESS_UPDATE_KEY]}
+            if "user_query_clarification" in data:
+                yield {"type": "response", "content": data["user_query_clarification"]}
+            if "final_result" in data:
+                final_result_ = data["final_result"]
+                yield {"type": "response", "content": "No results found!" if len(final_result_) == 0 else final_result_}
+    except GraphRecursionError as e:
+        print(f"{e}")
+        yield {"type": "error", "content": "Your maximum conversation limit reached!"}
+    except ProgrammingError as e:
+        print(f"{e}")
+        yield {"type": "error", "content": "Something went wrong! Please try again!!"}
 
 
 def create_memory_db(session_id: str) -> SqliteSaver:

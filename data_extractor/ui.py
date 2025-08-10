@@ -8,7 +8,7 @@ from src.data_extractor_agent import stream_agent
 
 nest_asyncio.apply()
 load_dotenv()
-st.title("Chat with your database")
+st.title("Chat with your data")
 
 # Initialize chat history and agent
 if "messages" not in st.session_state:
@@ -46,6 +46,8 @@ if prompt := st.chat_input("What do you want to see in your data..."):
                     progress_update = chunk["content"]
                     if progress_update:
                         placeholder.text(progress_update)
+                elif chunk.get("type") == "error":
+                    placeholder.markdown(chunk["content"])
                 elif chunk.get("type") == "response":
                     progress_update = ''
                     response = chunk["content"]

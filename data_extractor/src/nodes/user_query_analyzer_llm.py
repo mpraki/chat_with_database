@@ -1,5 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.config import get_stream_writer
+from langgraph.errors import GraphRecursionError
 
 from ..agent_state import AgentState, Conversation
 from ..llm import model
@@ -10,6 +11,10 @@ from ..utils.constants import Constants
 def analyze(state: AgentState) -> dict[str, str]:
     writer = get_stream_writer()
     writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Framing question for user query clarification..."})
+
+    current_user_query_revision = state.get('current_user_query_revision', 0) + 1
+    if current_user_query_revision > Constants.USER_QUERY_MAX_REVISIONS:
+        raise GraphRecursionError(f"Exceeded maximum query revisions: {Constants.USER_QUERY_MAX_REVISIONS}")
 
     schema_summary = ''
     # Read schema summary from the relative path
@@ -31,7 +36,8 @@ def analyze(state: AgentState) -> dict[str, str]:
 
     writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Framed question for user query clarification..."})
 
-    return {'user_query_clarification': response.content, 'conversation_history': history}
+    return {'user_query_clarification': response.content, 'conversation_history': history,
+            'current_user_query_revision': current_user_query_revision}
 
 
 def format_conversation(conversation: list[Conversation]) -> str:
