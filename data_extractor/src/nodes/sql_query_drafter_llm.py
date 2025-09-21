@@ -14,8 +14,8 @@ def draft(state: AgentState) -> dict:
     print(f"Drafting SQL query for state: {state['enhanced_user_query']}")
 
     current_draft_revision = state.get('current_draft_revision', 0) + 1
-    if current_draft_revision > Constants.MAX_DRAFT_REVISION:
-        raise GraphRecursionError(f"Exceeded maximum draft revisions: {Constants.MAX_DRAFT_REVISION}")
+    # if current_draft_revision > Constants.MAX_DRAFT_REVISION:
+    #     raise GraphRecursionError(f"Exceeded maximum draft revisions: {Constants.MAX_DRAFT_REVISION}")
 
     # Collect all document page contents into a list
     db_schema = [doc.page_content for doc, _ in state['vector_results']]

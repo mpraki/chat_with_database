@@ -1,0 +1,28 @@
+The "world" database contains structured information about countries, cities, and languages spoken globally.
+
+Purpose:
+The database is designed to provide data about countries, their cities, and languages.
+
+Main Tables:
+
+    1. country:
+        Stores information about each country.
+        Key fields: country code, name, continent, region, surface area, year of independence, population, life expectancy, GNP, local name, government form, head of state, capital city, and a 2-letter code.
+        Primary key: Code (3-character country code).
+
+    2. city:
+        Contains details about cities worldwide.
+        Key fields: city ID, name, country code (links to country), district, and population.
+        Primary key: ID (auto-incremented integer).
+        Foreign key: CountryCode references country.Code.
+
+    3. countrylanguage:
+        Links countries to the languages spoken within them.
+        Key fields: country code, language name, whether it is an official language, and the percentage of speakers.
+        Primary key: composite of CountryCode and Language.
+        Foreign key: CountryCode references country.Code.
+
+Use Cases:
+    Querying for country and city statistics.
+    Analyzing language distribution by country.
+    Practicing SQL joins, aggregations, and subqueries.

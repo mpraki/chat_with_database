@@ -47,6 +47,24 @@ def main():
     # Create vector store
     create_vector_store(updated_table_dict)
 
+def load_from_json():
+    import json
+
+    with open('schema.json', 'r') as f:
+        results = json.load(f)
+
+    table_dict = {}
+    for row in results:
+        table_name = row.get('TableName')
+        if table_name not in table_dict:
+            table_dict[table_name] = []
+        table_dict[table_name].append(row)
+
+    print(f"table_dict : {table_dict}\n")
+
+    # Create vector store
+    create_vector_store(table_dict)
 
 if __name__ == "__main__":
-    main()
+    # main()
+    load_from_json()

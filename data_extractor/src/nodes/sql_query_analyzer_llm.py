@@ -14,6 +14,10 @@ def analyze(state: AgentState) -> dict:
     writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Analyzing drafted SQL query..."})
     print(f"Analysing drafted SQL query: {state['sql_query_draft']}")
 
+    current_draft_revision = state.get('current_draft_revision', 0)
+    if current_draft_revision > Constants.MAX_DRAFT_REVISION:
+        return {'is_draft_query_valid': True, 'reason_for_draft_revision': None}
+
     parser = StructuredOutputParser.from_response_schemas(response_schemas())
     format_instructions = parser.get_format_instructions(only_json=True)
 

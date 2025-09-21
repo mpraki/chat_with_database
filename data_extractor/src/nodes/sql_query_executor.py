@@ -3,7 +3,7 @@ import os
 from langgraph.config import get_stream_writer
 
 from ..agent_state import AgentState
-from ..utils.azure_sql_util import get_azure_sql_connection, execute_query
+from ..utils.mysql_util import execute_query
 from ..utils.constants import Constants
 
 
@@ -14,4 +14,4 @@ def execute(state: AgentState) -> dict:
 
     results = execute_query(state['sql_query_draft'])
     writer({Constants.STATE_PROGRESS_UPDATE_KEY: "SQL query execution complete."})
-    return {'final_result': results}
+    return {'final_result': results, 'current_draft_revision': 0}

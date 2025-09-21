@@ -15,7 +15,7 @@ def search(state: AgentState) -> dict[str, list[tuple[Document, float]]]:
     writer = get_stream_writer()
     writer({Constants.STATE_PROGRESS_UPDATE_KEY: "Finding relevant schemas..."})
 
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001",
+    embeddings = GoogleGenerativeAIEmbeddings(model=os.getenv("EMBEDDING_MODEL"),
                                               google_api_key=SecretStr(os.getenv("GOOGLE_API_KEY")))
 
     collection_name = "sql-schemas"
@@ -40,7 +40,7 @@ def search(state: AgentState) -> dict[str, list[tuple[Document, float]]]:
         if hasattr(m, 'content') and getattr(m, 'type', None) == 'human'
     ]) + ' ' + state['task'])
 
-    docs_and_scores = vector_db.similarity_search_with_score(query=user_query_context, k=4)
+    docs_and_scores = vector_db.similarity_search_with_score(query=user_query_context, k=3)
     for doc, score in docs_and_scores:
         print(f"Found document with score: {score} and metadata: {doc.metadata}")
 

@@ -1,7 +1,7 @@
 import os
 
 from ..agent_state import AgentState
-from ..utils.azure_sql_util import get_azure_sql_connection, run_execute_plan_query
+from ..utils.mysql_util import run_execute_plan_query
 
 
 def execute(state: AgentState) -> dict:

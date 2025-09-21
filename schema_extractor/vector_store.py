@@ -5,10 +5,17 @@ import shutil
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from dotenv import load_dotenv
 
 
 def create_vector_store(table_columns: dict):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    load_dotenv()
+    # Initialize the embeddings model
+    model = os.getenv("EMBEDDING_MODEL")
+    if not model:
+        raise ValueError("EMBEDDING_MODEL environment variable is not set.")
+    
+    embeddings = GoogleGenerativeAIEmbeddings(model=model)
     collection_name = "sql-schemas"
     persist_directory = f"../vector_stores/{collection_name}"  # todo  Adjust the path to be common for both data and schema extractor
 

@@ -22,7 +22,7 @@ conversation: {conversation}
 schema_summary: {schema_summary}
 """
 
-USER_QUERY_ENHANCER_PROMPT = """You are an planning assistant. Your task is to generate a detailed plan for constructing an Azure SQL SQL SELECT query based on the provided conversation_history and db_schema. 
+USER_QUERY_ENHANCER_PROMPT = """You are an planning assistant. Your task is to generate a detailed plan for constructing an MySQL SQL SELECT query based on the provided conversation_history and db_schema. 
 
 You will not generate SQL directly. Instead, your output should be a structured and logical plan that explains how the SQL should be constructed to fulfill the user's request. This plan will be used in a downstream step to generate the actual SQL.
 
@@ -30,7 +30,7 @@ Keep your response concise.
 
 Inputs:
 
-conversation_history: A record of the user’s question or interaction.
+conversation_history: A record of the user’s question and assistant’s response.
 
 db_schema: A description of the database schema, including tables, columns, data types, primary and foreign keys, and relationships.
 
@@ -38,18 +38,20 @@ Assumptions:
 
 Only SELECT queries are supported (no INSERT, UPDATE, DELETE, or DDL).
 
-The database is Azure SQL, so plans must reflect Azure SQL-compatible SQL features and functions.
+The database is MySQL, so plans must reflect MySQL-compatible SQL features and functions.
 
 Output:
 Produce a detailed and ordered plan that includes the following:
 
 Identify the user's intent
 
-Analyze the conversation_history to understand what the user is trying to retrieve.
+Analyze the conversation_history to understand what the user is trying to retrieve and what the assistant is trying to help with.
 
 Clarify what kind of information is being requested and the context.
 
-Determine relevant tables
+If the user's question is already answered with query results, look for the user's last question to understand what they are trying to retrieve.
+
+Determine relevant tables.
 
 Based on the user intent and schema, identify which table(s) contain the required data.
 
@@ -69,11 +71,11 @@ Define any filters or constraints based on the user’s request.
 
 Include conditions for matching values, date ranges, statuses, etc.
 
-Consider Azure SQL-specific constraints
+Consider MySQL-specific constraints
 
-Use Azure SQL SQL syntax where applicable (e.g., TOP, GETDATE()).
+Use MySQL SQL syntax where applicable (e.g., LIMIT, CURDATE()).
 
-If filtering by date or JSON, plan for Azure SQL-compatible functions.
+If filtering by date or JSON, plan for MySQL-compatible functions.
 
 Add ordering or grouping if needed
 
@@ -81,41 +83,41 @@ Determine if the result should be sorted (ORDER BY) or aggregated (GROUP BY) bas
 
 Handle special columns or data types
 
-If the schema includes metadata (JSON), nested structures, or complex types, indicate if Azure SQL JSON functions should be used (e.g., JSON_VALUE, JSON_TABLE).
+If the schema includes metadata (JSON), nested structures, or complex types, indicate if MySQL JSON functions should be used (e.g., JSON_VALUE, JSON_TABLE).
 
 Assumptions and limitations
 
 Clearly state any assumptions made due to missing or vague context in the user's request.
 
 Format:
-Return your output as a structured, numbered list of steps that would logically lead to an accurate Azure SQL SELECT query construction.
+Return your output as a structured, numbered list of steps that would logically lead to an accurate MySQL SELECT query construction.
 
 Do not generate SQL in this step. Focus solely on the planning.
 
 conversation_history: {conversation_history}
 db_schema: {db_schema}"""
 
-SQL_QUERY_DRAFTER_PROMPT = """You are an LLM-based query generation assistant. Your task is to generate a complete and valid Azure SQL SQL SELECT query using the provided plan and db_schema.
+SQL_QUERY_DRAFTER_PROMPT = """You are an LLM-based query generation assistant. Your task is to generate a complete and valid MySQL SQL SELECT query using the provided plan and db_schema.
 
 Inputs:
 
-query_plan: A structured, step-by-step logical plan for building the SQL query. This includes the user’s intent, selected tables and columns, join logic, filter conditions, ordering, grouping, and Azure SQL-specific considerations.
+query_plan: A structured, step-by-step logical plan for building the SQL query. This includes the user’s intent, selected tables and columns, join logic, filter conditions, ordering, grouping, and MySQL-specific considerations.
 
 db_schema: The database schema that describes tables, columns, data types, primary/foreign key relationships, and special fields such as JSON metadata.
 
 Constraints:
 
-Only Azure SQL-compatible SELECT queries are supported.
+Only MySQL-compatible SELECT queries are supported.
 
-The output must be a complete, syntactically correct Azure SQL SQL query.
+The output must be a complete, syntactically correct MySQL SQL query.
 
 Do not include any explanation, comments, or non-SQL output.
 
-Use proper Azure SQL syntax, including:
+Use proper MySQL syntax, including:
 
-GETDATE() for date parsing (if needed)
+CURDATE() for date parsing (if needed)
 
-TOP for limiting results
+LIMIT for limiting results
 
 Do not include the id columns(primary and foreign keys) in the select query.
 
@@ -123,19 +125,17 @@ Use fully qualified column references where needed (e.g., agreements.status)
 
 Always use fully qualified table names with the schema name. (e.g., SELECT * FROM schema_name.table_name)
 
-Always use TOP 10 in the select query to limit the number of rows.
-
 Replace(Alias) the column names with human-readable names if they are not user-friendly.
 
 Output:
-Return only the SQL query as a single string.
+Return only the SQL query as a single string. Do not include any additional text. Do not include any comments or explanations. Do not include any blockquotes.
 
 query_plan: {query_plan}
 db_schema: {db_schema}
 """
 
 SQL_VALIDATION_PROMPT = """
-You are a security-focused SQL expert for Azure SQL Database. 
+You are a security-focused SQL expert for MySQL Database. 
 
 Given the following SQL query, validate its syntax and check for any errors, security improvements and best practices(only if any huge mistake).
 No need to suggest some improvements always. If the query can be executed without major side effects, simply return True. 
@@ -146,9 +146,9 @@ SQL Query:
 {format_instructions}
 """
 
-SQL_QUERY_DRAFT_REVISION_PROMPT = """You are an LLM-based query generation assistant. Your task is to fix the provided Azure SQL SELECT query using the provided plan, db_schema, and any identified issues.
+SQL_QUERY_DRAFT_REVISION_PROMPT = """You are an LLM-based query generation assistant. Your task is to fix the provided MySQL SELECT query using the provided plan, db_schema, and any identified issues.
 Inputs:
-query_plan: A structured, step-by-step logical plan for building the SQL query. This includes the user’s intent, selected tables and columns, join logic, filter conditions, ordering, grouping, and Azure SQL-specific considerations.
+query_plan: A structured, step-by-step logical plan for building the SQL query. This includes the user’s intent, selected tables and columns, join logic, filter conditions, ordering, grouping, and MySQL-specific considerations.
 
 db_schema: The database schema that describes tables, columns, data types, primary/foreign key relationships, and special fields such as JSON metadata.
 
@@ -157,12 +157,12 @@ sql_query: The original SQL query that needs to be fixed.
 identified_issues: A list of specific issues or errors found in the original SQL query, such as syntax errors, missing joins, incorrect column references, or security vulnerabilities.
 
 Constraints:
-Only Azure SQL-compatible SELECT queries are supported.
-The output must be a complete, syntactically correct Azure SQL SQL query.
+Only MySQL-compatible SELECT queries are supported.
+The output must be a complete, syntactically correct MySQL SQL query.
 Do not include any explanation, comments, or non-SQL output.
-Use proper Azure SQL syntax, including:
-GETDATE() for date parsing (if needed)
-TOP for limiting results
+Use proper MySQL syntax, including:
+CURDATE() for date parsing (if needed)
+LIMIT for limiting results
 Use fully qualified column references where needed (e.g., agreements.status)
 Always use fully qualified table names with the schema name. (e.g., SELECT * FROM schema_name.table_name)
 
